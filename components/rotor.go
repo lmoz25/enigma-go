@@ -36,7 +36,7 @@ func NewRotor(startPosition rune, rotateCharacters []rune, rotorNumber int, wiri
 	}, nil
 }
 
-func (r *Rotor) Rotate() {
+func (r *Rotor) rotate() {
 	r.position++
 	if r.position > 'Z' {
 		r.position = 'A'
@@ -52,25 +52,29 @@ func (r *Rotor) encode(c rune) (encoded rune) {
 		leftHand = 'A' + diff
 	}
 	encoded = r.wiringTable[leftHand]
-	if len(r.rotateCharacters) == 0 {
-		r.Rotate()
+	// Use '*' to just check for rotors that rotate with every keypress
+	if shouldRotate(r, '*') {
+		r.rotate()
 	}
 	return
 }
 
 type RotorSet struct {
-	Rotors []*Rotor
+	Rotors     []*Rotor
+	reflection bool
 }
 
 func (rs *RotorSet) Encode(c rune) rune {
-	// Init to something invalid
-	lastRotorPosition := 'a'
-	for _, rotor := range rs.Rotors {
-		if _, ok := rotor.rotateCharacters[lastRotorPosition]; ok {
-			rotor.Rotate()
-		}
+	for i, rotor := range rs.Rotors {
 		c = rotor.encode(c)
-		lastRotorPosition = rotor.position
+		if i+1 < len(rs.Rotors) && shouldRotate(rs.Rotors[i+1], rotor.position) {
+			rs.Rotors[i+1].rotate()
+		}
 	}
 	return c
+}
+
+func shouldRotate(rotor *Rotor, position rune) bool {
+	_, ok := rotor.rotateCharacters[position]
+	return ok || len(rotor.rotateCharacters) == 0
 }
